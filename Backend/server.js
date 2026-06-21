@@ -4,6 +4,16 @@ import { connectDB } from "./config/db.js";
 import { setupWebSockets } from "./sockets/index.js";
 import app from "./app.js";
 
+process.on("uncaughtException", (err) => {
+  console.error("UNCAUGHT EXCEPTION:");
+  console.error(err);
+});
+
+process.on("unhandledRejection", (err) => {
+  console.error("UNHANDLED REJECTION:");
+  console.error(err);
+});
+
 // Load env vars
 dotenv.config();
 
@@ -22,12 +32,3 @@ httpServer.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
-process.on("uncaughtException", (err) => {
-  console.error("UNCAUGHT EXCEPTION:");
-  console.error(err);
-});
-
-process.on("unhandledRejection", (err) => {
-  console.error("UNHANDLED REJECTION:");
-  console.error(err);
-});
