@@ -18,7 +18,7 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(loggerMiddleware);
-// app.use(clerkMiddleware());
+app.use(clerkMiddleware());
 // app.use(mockAuthMiddleware);
 
 // API Routes

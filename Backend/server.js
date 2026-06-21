@@ -17,18 +17,17 @@ process.on("unhandledRejection", (err) => {
 // Load env vars
 dotenv.config();
 
-// Connect to database
-connectDB();
+const startServer = async () => {
+  await connectDB();
 
-// Create core HTTP server using the configured Express app
-const httpServer = createServer(app);
+  const httpServer = createServer(app);
+  setupWebSockets(httpServer);
 
-// Setup WebSockets
-setupWebSockets(httpServer);
+  const PORT = process.env.PORT || 3000;
+  httpServer.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+};
 
-const PORT = process.env.PORT || 3000;
-
-httpServer.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+startServer();
 
