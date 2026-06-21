@@ -24,9 +24,9 @@ export const setupWebSockets = (httpServer) => {
   // ── 1. Yjs CRDT Sync ──────────────────────────────────────
   // YSocketIO creates namespaces like /<roomId> for each room.
   // It handles Yjs document sync, awareness, and state vectors internally.
-  // const ySocketIO = new YSocketIO(io);
-  // ySocketIO.initialize();
-  // console.log("[WebSocket] Yjs sync layer (y-socket.io) initialized");
+  const ySocketIO = new YSocketIO(io);
+  ySocketIO.initialize();
+  console.log("[WebSocket] Yjs sync layer (y-socket.io) initialized");
 
   // ── 2. Application Events (Room Presence) ──────────────────
   // The main namespace handles our custom room management events.
