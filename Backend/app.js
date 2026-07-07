@@ -13,8 +13,22 @@ import { clerkMiddleware } from '@clerk/express';
 import { mockAuthMiddleware } from "./middlewares/mockAuth.js";
 
 // Global Middlewares
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  "https://code-sync-nu-nine.vercel.app",
+  "http://localhost:5173",
+].filter(Boolean);
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || "*",
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
 }));
 app.use(express.json());
 app.use(loggerMiddleware);
