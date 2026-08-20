@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Play, Sparkles } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
 import Button from "../components/ui/Button";
 import FeatureCard from "../components/shared/FeatureCard";
 import PricingCard from "../components/shared/PricingCard";
@@ -34,12 +34,6 @@ function Hero() {
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <div className="flex flex-col items-center text-center">
-          {/* Badge */}
-          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-medium bg-brand-500/10 text-brand-400 border border-brand-500/20 mb-8">
-            <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-            Now in Public Beta — Join 89,000+ developers
-          </span>
-
           {/* Headline */}
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-text-heading leading-tight mb-6">
             Code Together.{" "}
@@ -59,9 +53,6 @@ function Hero() {
                 Start Coding
               </Button>
             </Link>
-            <Button variant="secondary" size="lg" icon={Play}>
-              Watch Demo
-            </Button>
           </div>
 
           {/* Hero Editor */}

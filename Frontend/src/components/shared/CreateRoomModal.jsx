@@ -45,6 +45,15 @@ export default function CreateRoomModal({ isOpen, onClose }) {
 
       if (response.success) {
         const newRoomId = response.data.roomId;
+        const newRoomObj = {
+          roomId: newRoomId,
+          name: formData.name,
+          language: formData.language,
+          createdAt: new Date().toISOString(),
+        };
+        const existingUserRooms = JSON.parse(localStorage.getItem("codesync_user_rooms") || "[]");
+        localStorage.setItem("codesync_user_rooms", JSON.stringify([newRoomObj, ...existingUserRooms]));
+
         setCreatedRoomId(newRoomId);
         setGeneratedLink(`${window.location.origin}/room/${newRoomId}`);
         setStep("success");

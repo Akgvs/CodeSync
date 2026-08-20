@@ -9,8 +9,8 @@ import { Users } from "lucide-react";
  *
  * @param {{ currentUserId: string }} props
  */
-export default function UserPresencePanel({ currentUserId }) {
-  const { users, userCount } = useRoomUsers();
+export default function UserPresencePanel({ roomId, currentUserId }) {
+  const { users, userCount } = useRoomUsers(roomId);
 
   /**
    * Generate initials from a name (e.g., "John Doe" → "JD").

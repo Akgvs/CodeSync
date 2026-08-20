@@ -13,19 +13,22 @@ import { getAuth } from "@clerk/express";
  */
 export const createRoom = async (req, res, next) => {
   try {
-    const { clerkId } = getAuth(req);
-    if (!clerkId) {
+    const auth = getAuth(req);
+    const ownerClerkId = auth.userId || req.body?.ownerClerkId;
+    if (!ownerClerkId) {
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
     const { name, language, privacy } = req.body;
-    const ownerClerkId = clerkId; // Securely get from token
 
-    // Verify the user exists in MongoDB via their Clerk ID
-    const user = await User.findOne({ clerkId: ownerClerkId });
+    // Verify or find user in MongoDB via their Clerk ID
+    let user = await User.findOne({ clerkId: ownerClerkId });
     if (!user) {
-      res.status(404);
-      throw new Error("User not found in DB");
+      user = await User.create({
+        clerkId: ownerClerkId,
+        email: req.body?.email || "",
+        firstName: req.body?.firstName || "Developer",
+      }).catch(() => null);
     }
 
     // Generate a URL-safe room ID (6 chars, cryptographically random)
@@ -34,8 +37,8 @@ export const createRoom = async (req, res, next) => {
     // Store room metadata in Redis
     await RoomManager.createRoom(roomId, {
       name,
-      language,
-      privacy,
+      language: language || "javascript",
+      privacy: privacy || "public",
       ownerId: ownerClerkId,
     });
 
@@ -57,17 +60,12 @@ export const createRoom = async (req, res, next) => {
 /**
  * @desc    Get a room by its ID
  * @route   GET /api/rooms/:roomId
- * @access  Private
+ * @access  Public / Private
  *
  * Fetches room metadata from Redis.
  */
 export const getRoomById = async (req, res, next) => {
   try {
-    const { clerkId } = getAuth(req);
-    if (!clerkId) {
-      return res.status(401).json({ success: false, message: "Unauthorized" });
-    }
-
     const room = await RoomManager.getRoom(req.params.roomId);
 
     if (!room) {
@@ -94,7 +92,8 @@ export const getRoomById = async (req, res, next) => {
  */
 export const getSharedRooms = async (req, res, next) => {
   try {
-    const { clerkId } = getAuth(req);
+    const auth = getAuth(req);
+    const clerkId = auth.userId || req.params.clerkId;
     if (!clerkId) {
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
@@ -102,6 +101,28 @@ export const getSharedRooms = async (req, res, next) => {
     res.status(200).json({
       success: true,
       data: [],
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Get real-time room & collaborator statistics from Redis
+ * @route   GET /api/rooms/stats/live
+ * @access  Public
+ */
+export const getRoomStats = async (req, res, next) => {
+  try {
+    const activeRooms = await RoomManager.getActiveRoomCount();
+    const activeCollaborators = await RoomManager.getActiveCollaboratorCount();
+
+    res.status(200).json({
+      success: true,
+      data: {
+        activeRooms,
+        activeCollaborators,
+      },
     });
   } catch (error) {
     next(error);

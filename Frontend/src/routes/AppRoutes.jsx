@@ -14,7 +14,6 @@ import Dashboard from "../pages/Dashboard";
 import Profile from "../pages/Profile";
 import Settings from "../pages/Settings";
 import Teams from "../pages/Teams";
-import SharedRooms from "../pages/SharedRooms";
 import Room from "../pages/Room";
 
 export default function AppRoutes() {
@@ -34,7 +33,6 @@ export default function AppRoutes() {
       {/* Protected dashboard routes */}
       <Route element={<DashboardLayout />}>
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/dashboard/shared" element={<SharedRooms />} />
         <Route path="/dashboard/teams" element={<Teams />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/settings" element={<Settings />} />

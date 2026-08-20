@@ -1,31 +1,90 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, LogIn, Trash2 } from "lucide-react";
+import { Plus, LogIn, FolderOpen, Users } from "lucide-react";
 import StatCard from "../components/shared/StatCard";
 import CreateRoomModal from "../components/shared/CreateRoomModal";
-import { DASHBOARD_STATS } from "../utils/constants";
-import { useAppDispatch } from "../store/hooks";
-import { addToast } from "../store/toastSlice";
 import { ACTION_COLOR_MAP } from "../utils/colorMaps";
+import { fetchTeams } from "../utils/api";
+import { useAuth } from "@clerk/clerk-react";
 
 const QUICK_ACTIONS = [
   { label: "Create Room", description: "Start a new coding session", icon: Plus, color: "brand" },
   { label: "Join Room", description: "Join with a room ID", icon: LogIn, color: "success" },
-  { label: "Remove Room", description: "Delete an existing room", icon: Trash2, color: "danger" },
 ];
 
 export default function Dashboard() {
   const [createRoomOpen, setCreateRoomOpen] = useState(false);
-  const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const { getToken } = useAuth();
+
+  const [stats, setStats] = useState([
+    { label: "Total Projects", value: "0", change: "Active rooms & team common rooms", icon: FolderOpen, color: "brand" },
+    { label: "Collaborators", value: "0", change: "Unique team members", icon: Users, color: "info" },
+  ]);
+
+  useEffect(() => {
+    async function calculateRealStats() {
+      try {
+        const liveRes = await fetchLiveRoomStats().catch(() => null);
+        const res = await fetchTeams(getToken).catch(() => null);
+
+        let activeRooms = liveRes?.data?.activeRooms ?? 0;
+        let activeCollaborators = liveRes?.data?.activeCollaborators ?? 0;
+
+        // If no active live rooms in Redis, fall back to team counts for display
+        let teamList = [];
+        if (res && res.success && Array.isArray(res.data)) {
+          teamList = res.data;
+        } else {
+          const savedTeams = localStorage.getItem("codesync_teams");
+          teamList = savedTeams ? JSON.parse(savedTeams) : [];
+        }
+
+        const teamRoomsCount = teamList.reduce((acc, t) => acc + (t.rooms?.length || 0), 0);
+        const collaboratorSet = new Set();
+        teamList.forEach((t) => {
+          if (Array.isArray(t.members)) {
+            t.members.forEach((m) => {
+              if (m.name || m.clerkId) collaboratorSet.add(m.name || m.clerkId);
+            });
+          }
+        });
+
+        // Use live active counts if present, otherwise team baseline
+        const totalProjectsCount = activeRooms > 0 ? activeRooms : teamRoomsCount;
+        const totalCollaboratorsCount = activeCollaborators > 0 ? activeCollaborators : collaboratorSet.size;
+
+        setStats([
+          {
+            label: "Total Active Projects",
+            value: String(totalProjectsCount),
+            change: totalProjectsCount === 1 ? "1 active room live" : `${totalProjectsCount} active rooms live`,
+            icon: FolderOpen,
+            color: "brand",
+          },
+          {
+            label: "Connected Collaborators",
+            value: String(totalCollaboratorsCount),
+            change: totalCollaboratorsCount === 1 ? "1 collaborator connected" : `${totalCollaboratorsCount} collaborators connected`,
+            icon: Users,
+            color: "info",
+          },
+        ]);
+      } catch (e) {
+        console.error("Failed to compute stats:", e);
+      }
+    }
+
+    calculateRealStats();
+    const interval = setInterval(calculateRealStats, 3000);
+    return () => clearInterval(interval);
+  }, [getToken, createRoomOpen]);
 
   const handleQuickAction = (action) => {
     if (action === "Create Room") {
       setCreateRoomOpen(true);
     } else if (action === "Join Room") {
       navigate("/join");
-    } else if (action === "Remove Room") {
-      dispatch(addToast("Select a room to remove (Coming Soon)", "warning"));
     }
   };
 
@@ -39,7 +98,7 @@ export default function Dashboard() {
 
       {/* Stats */}
       <div className="grid sm:grid-cols-2 gap-4 mb-8">
-        {DASHBOARD_STATS.map((stat) => (
+        {stats.map((stat) => (
           <StatCard key={stat.label} {...stat} />
         ))}
       </div>
@@ -47,11 +106,10 @@ export default function Dashboard() {
       {/* Quick Actions */}
       <div className="mb-8">
         <h2 className="text-lg font-semibold text-text-heading mb-4">Quick Actions</h2>
-        <div className="grid sm:grid-cols-3 gap-4">
+        <div className="grid sm:grid-cols-2 gap-4">
           {QUICK_ACTIONS.map((action) => {
             const Icon = action.icon;
-            // Provide a fallback for danger color map if it's missing in ACTION_COLOR_MAP
-            const colorClass = ACTION_COLOR_MAP[action.color] || "bg-danger-muted text-danger group-hover:bg-danger/20";
+            const colorClass = ACTION_COLOR_MAP[action.color] || "bg-brand-muted text-brand-400";
             return (
               <button
                 key={action.label}

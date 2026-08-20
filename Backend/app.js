@@ -1,16 +1,16 @@
 import express from "express";
 import cors from "cors";
+import { clerkMiddleware } from '@clerk/express';
 import { loggerMiddleware } from "./middlewares/loggerMiddleware.js";
 import { notFound, errorHandler } from "./middlewares/errorMiddleware.js";
 
 import healthRoutes from "./routes/healthRoutes.js";
 import roomRoutes from "./routes/roomRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
+import teamRoutes from "./routes/teamRoutes.js";
+import paymentRoutes from "./routes/paymentRoutes.js";
 
 const app = express();
-
-import { clerkMiddleware } from '@clerk/express';
-import { mockAuthMiddleware } from "./middlewares/mockAuth.js";
 
 // Global Middlewares
 const allowedOrigins = [
@@ -39,6 +39,8 @@ app.use(clerkMiddleware());
 app.use("/", healthRoutes);
 app.use("/api/rooms", roomRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/teams", teamRoutes);
+app.use("/api/payment", paymentRoutes);
 
 // Error Handling Middlewares (Must be at the end)
 app.use(notFound);

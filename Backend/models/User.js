@@ -21,6 +21,20 @@ const userSchema = new mongoose.Schema(
     avatarUrl: {
       type: String,
     },
+    subscription: {
+      plan: {
+        type: String,
+        enum: ["Free", "Pro"],
+        default: "Free",
+      },
+      status: {
+        type: String,
+        default: "active",
+      },
+      razorpayOrderId: String,
+      razorpayPaymentId: String,
+      updatedAt: Date,
+    },
   },
   {
     timestamps: true,

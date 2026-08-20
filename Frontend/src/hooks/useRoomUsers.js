@@ -9,23 +9,30 @@ import { useSocket } from "./useSocket";
  *
  * @returns {{ users: Array<{ socketId: string, id: string, name: string, avatar: string }>, userCount: number }}
  */
-export function useRoomUsers() {
+export function useRoomUsers(roomId) {
   const { socket } = useSocket();
   const [users, setUsers] = useState([]);
 
   useEffect(() => {
     if (!socket) return;
 
-    const handleUsersUpdated = ({ roomId, users: updatedUsers }) => {
-      setUsers(updatedUsers || []);
+    const handleUsersUpdated = ({ roomId: updatedRoomId, users: updatedUsers }) => {
+      if (!roomId || updatedRoomId === roomId) {
+        setUsers(updatedUsers || []);
+      }
     };
 
     socket.on("room:users-updated", handleUsersUpdated);
 
+    // Request initial user list if roomId is supplied
+    if (roomId && socket.connected) {
+      socket.emit("get-room-users", { roomId });
+    }
+
     return () => {
       socket.off("room:users-updated", handleUsersUpdated);
     };
-  }, [socket]);
+  }, [socket, roomId]);
 
   return {
     users,

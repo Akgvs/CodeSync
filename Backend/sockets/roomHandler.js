@@ -38,7 +38,7 @@ export function registerRoomHandler(io, socket) {
       }
 
       // Join the Socket.IO room (for scoped broadcasting)
-      socket.join(roomId);
+      await socket.join(roomId);
 
       // Track user in Redis
       await RoomManager.joinRoom(roomId, socket.id, user);
@@ -48,12 +48,31 @@ export function registerRoomHandler(io, socket) {
 
       // Broadcast updated user list to everyone in this room
       const users = await RoomManager.getRoomUsers(roomId);
-      io.to(roomId).emit("room:users-updated", { roomId, users });
 
-      console.log(`[RoomHandler] "${user.name}" joined room "${roomId}"`);
+      // 1. Emit directly to joining socket to guarantee instant update
+      socket.emit("room:users-updated", { roomId, users });
+
+      // 2. Broadcast to all other room members
+      socket.to(roomId).emit("room:users-updated", { roomId, users });
+
+      console.log(`[RoomHandler] "${user.name}" joined room "${roomId}" — total ${users.length} user(s)`);
     } catch (err) {
       console.error(`[RoomHandler] Error in join-room:`, err);
       socket.emit("error", { message: "Failed to join room" });
+    }
+  });
+
+  /**
+   * Handle "get-room-users" request.
+   * @param {{ roomId: string }} data
+   */
+  socket.on("get-room-users", async ({ roomId }) => {
+    try {
+      if (!roomId) return;
+      const users = await RoomManager.getRoomUsers(roomId);
+      socket.emit("room:users-updated", { roomId, users });
+    } catch (err) {
+      console.error(`[RoomHandler] Error in get-room-users:`, err);
     }
   });
 

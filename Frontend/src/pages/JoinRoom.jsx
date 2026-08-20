@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Link2, Hash, ArrowRight, AlertCircle } from "lucide-react";
+import { Link2, Hash, ArrowRight, ArrowLeft, AlertCircle } from "lucide-react";
 import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
 
@@ -57,6 +57,14 @@ export default function JoinRoom() {
 
       <div className="relative w-full max-w-md">
         <div className="glass-strong rounded-2xl p-8">
+          <button
+            onClick={() => navigate("/dashboard")}
+            className="flex items-center gap-2 text-xs font-medium text-text-muted hover:text-text-heading transition-colors mb-6"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Dashboard
+          </button>
+
           <div className="text-center mb-8">
             <div className="w-14 h-14 rounded-2xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center mx-auto mb-4">
               <Link2 className="w-7 h-7 text-brand-400" />

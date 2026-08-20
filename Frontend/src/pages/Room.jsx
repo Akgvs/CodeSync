@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
 import { ArrowLeft, Share2, Wifi, WifiOff, Loader2 } from "lucide-react";
@@ -16,21 +16,27 @@ import { getRoom } from "../utils/api";
  * RoomInner — The actual room content, rendered inside both providers.
  * Separated so it can call useSocket() which needs <SocketProvider> above it.
  */
+
 function RoomInner({ room, roomId }) {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { user } = useUser();
   const { isConnected, connectionError, emitJoinRoom, emitLeaveRoom } = useSocket();
+  const guestIdRef = useRef(`guest_${Math.random().toString(36).substring(2, 8)}`);
+
+  const effectiveUserId = user?.id || guestIdRef.current;
+  const effectiveUserName = user
+    ? [user.firstName, user.lastName].filter(Boolean).join(" ") || "Developer"
+    : `Guest ${guestIdRef.current.slice(-4)}`;
 
   // Emit join-room when socket connects, leave-room on unmount
   useEffect(() => {
-    if (!isConnected || !user) return;
+    if (!isConnected) return;
 
-    // Build user data from Clerk
     const userData = {
-      id: user.id,
-      name: [user.firstName, user.lastName].filter(Boolean).join(" ") || "Anonymous",
-      avatar: user.imageUrl || "",
+      id: effectiveUserId,
+      name: effectiveUserName,
+      avatar: user?.imageUrl || "",
     };
 
     emitJoinRoom(roomId, userData);
@@ -39,7 +45,7 @@ function RoomInner({ room, roomId }) {
     return () => {
       emitLeaveRoom(roomId);
     };
-  }, [isConnected, user, roomId, emitJoinRoom, emitLeaveRoom]);
+  }, [isConnected, effectiveUserId, effectiveUserName, user?.imageUrl, roomId, emitJoinRoom, emitLeaveRoom]);
 
   const handleShare = () => {
     const link = `${window.location.origin}/room/${roomId}`;
@@ -88,7 +94,7 @@ function RoomInner({ room, roomId }) {
 
         <div className="flex items-center gap-3">
           {/* Live user presence panel */}
-          <UserPresencePanel currentUserId={user?.id} />
+          <UserPresencePanel roomId={roomId} currentUserId={effectiveUserId} />
           <Button onClick={handleShare} icon={Share2} size="sm">
             Share
           </Button>

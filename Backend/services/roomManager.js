@@ -166,3 +166,23 @@ export async function getActiveRoomCount() {
 
   return roomIds.size;
 }
+
+/**
+ * Get total connected collaborators across all active Redis rooms.
+ * @returns {Promise<number>}
+ */
+export async function getActiveCollaboratorCount() {
+  let cursor = "0";
+  let totalUsers = 0;
+
+  do {
+    const [nextCursor, keys] = await redis.scan(cursor, "MATCH", "room:*:users", "COUNT", 100);
+    cursor = nextCursor;
+    for (const key of keys) {
+      const count = await redis.hlen(key);
+      totalUsers += count;
+    }
+  } while (cursor !== "0");
+
+  return totalUsers;
+}

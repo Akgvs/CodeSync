@@ -1,38 +1,57 @@
 import Redis from "ioredis";
+import RedisMock from "ioredis-mock";
 import dotenv from "dotenv";
 
 dotenv.config();
 
-/**
- * Redis client singleton.
- *
- * Used for ephemeral room data (metadata + connected users).
- * MongoDB is still used for persistent User data (Clerk sync).
- */
-const redis = new Redis(process.env.REDIS_URL || "redis://127.0.0.1:6379", {
-  maxRetriesPerRequest: 3,
-  retryStrategy(times) {
-    const delay = Math.min(times * 200, 2000);
-    console.log(`[Redis] Retrying connection in ${delay}ms (attempt ${times})`);
-    return delay;
-  },
-  lazyConnect: false,
+let client;
+let isUsingMock = false;
+
+const mockRedis = new RedisMock();
+
+// Default to in-memory mock until real Redis connects
+client = mockRedis;
+isUsingMock = true;
+
+if (process.env.USE_MOCK_REDIS === "true" || process.env.REDIS_URL === "mock") {
+  console.log("[Redis] Configured to use in-memory Redis mock");
+} else {
+  const realRedis = new Redis(process.env.REDIS_URL || "redis://127.0.0.1:6379", {
+    maxRetriesPerRequest: 1,
+    enableOfflineQueue: false,
+    retryStrategy(times) {
+      if (times > 1) {
+        return null;
+      }
+      return 200;
+    },
+    lazyConnect: false,
+  });
+
+  realRedis.on("connect", () => {
+    console.log("[Redis] Connected to Redis server");
+    client = realRedis;
+    isUsingMock = false;
+  });
+
+  realRedis.on("error", (err) => {
+    if (!isUsingMock) {
+      console.warn(`[Redis] Connection issue (${err.message}). Using in-memory Redis mock.`);
+      client = mockRedis;
+      isUsingMock = true;
+    }
+  });
+}
+
+const redisProxy = new Proxy({}, {
+  get(target, prop) {
+    const activeClient = client || mockRedis;
+    const value = activeClient[prop];
+    if (typeof value === "function") {
+      return value.bind(activeClient);
+    }
+    return value;
+  }
 });
 
-redis.on("connect", () => {
-  console.log("[Redis] Connected to Redis");
-});
-
-redis.on("error", (err) => {
-  console.error("[Redis Full Error]", err);
-});
-
-redis.on("error", (err) => {
-  console.error("[Redis] Connection error:", err.message);
-});
-
-redis.on("close", () => {
-  console.log("[Redis] Connection closed");
-});
-
-export default redis;
+export default redisProxy;
